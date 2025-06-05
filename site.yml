@@ -4,21 +4,38 @@
   become: true
   pre_tasks:
 
-  - name: install updates (CentOS)
+  - name: update repo cache (CentOS)
     tags: always
     dnf:
-      update_only: yes
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "CentOS"
 
-  - name: install updates (Ubuntu)
+  - name: update repo cache (Ubuntu)
     tags: always
     apt:
-      upgrade: dist
       update_cache: yes
+    changed_when: false
     when: ansible_distribution == "Ubuntu"
+  
+  - name: install sudo package
+    tags: always
+    package:
+      name: sudo
+      state: present
 
 
+- hosts: all
+  become: true
+  tasks:
+
+  - name: add ssh key for simone
+    tags: always,simone
+    authorized_key:
+      user: simone
+      key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINsiSPeYWM9qt4F668C6CH9lpD76tkD>
+ 
+ 
 - hosts: workstations
   become: yes
   become_method: sudo
@@ -60,11 +77,35 @@
         - php
       state: latest
     when: ansible_distribution == "CentOS"
+  
+  - name: start httpd (CentOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+    when: ansible_distribution == "CentOS"
+
+  - name: change e-mail address for admin
+    tags: apache,centos,httpd
+    lineinfile: 
+      path: /etc/httpd/conf/httpd.conf 
+      regexp: '^ServerAdmin'
+      line: ServerAdmin somebody@somewhere.net
+    when: ansible_distribution == "CentOS"  
+    register: httpd
+
+  - name: restart httpd (centOS)
+    tags: apache,centos,httpd
+    service:
+      name: httpd
+      state: restarted
+    when: httpd.changed
 
   - name: copy default html file for site
-    tags: apache, apache2, httpd
+    tags: apache,apache2,httpd
     copy:
-      src: hello_world.html
+      src: default_site.html
       dest: /var/www/html/index.html
       owner: root
       group: root
