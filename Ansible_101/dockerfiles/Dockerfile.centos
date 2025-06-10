@@ -1,0 +1,11 @@
+# To create the CentOS image for Ansible target nodes 
+
+FROM quay.io/centos/centos:stream9
+MAINTAINER takeoff <tfakeye7@gmail.com>
+ARG DEBIAN_FRONTEND=noninteractive
+RUN yum update -y && yum install -y openssh-server sudo
+RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
+RUN sed -i 's/#PermitRootLogin yes/PermitRootLogin without-password/' /etc/ssh/sshd_config
+RUN mkdir -p /root/.ssh
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
