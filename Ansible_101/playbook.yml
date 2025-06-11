@@ -1,0 +1,8 @@
+---
+- name: Set up NTP on all CentOS servers
+  hosts: all
+  become: yes
+  tasks:
+  
+  - name: Ensure NTP is installed.
+    yum: name=chrony state=present
