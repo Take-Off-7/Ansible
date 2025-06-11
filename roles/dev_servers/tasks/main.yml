@@ -1,7 +1,0 @@
-- name: install python and git
-  tags: centos,dev,ubuntu
-  package:
-    name:
-      - python3
-      - git
-    state: present
