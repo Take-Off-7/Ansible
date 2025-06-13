@@ -1,0 +1,37 @@
+---
+- name: Sync system time using systemd-timesyncd
+  hosts: app
+  become: yes
+  
+  pre_tasks:
+
+    - name: Install ntpdate
+      apt: name=ntpdate state=present update_cache=yes
+
+    - name: Force sync time using ntpdate
+      command: ntpdate -u time.google.com
+
+  tasks:
+
+    - name: Ensure system-timesyncd is installed
+      apt:
+        name: systemd-timesycd
+        state: present
+        update_cache: yes
+
+    - name: Enable NTP synchronization
+      command: timedatectl set-ntp true
+    
+    - name: Restart systemd-timesyncd service
+      service:
+        name: systemd-timesyncd
+        state: restarted
+        enabled: yes
+
+    - name: Show current tiem status
+      command: timedatectl status
+      register: timedate_status
+
+    - name: Print timedatectl status
+      debug:
+        var: timedate_status.stdout_lines

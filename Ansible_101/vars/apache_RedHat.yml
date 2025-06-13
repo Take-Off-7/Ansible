@@ -1,0 +1,5 @@
+---
+src_file: httpd.conf
+apache_package: httpd
+apache_service: httpd
+apache_config_dir: /etc/httpd/conf/httpd.conf
