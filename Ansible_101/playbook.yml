@@ -2,18 +2,20 @@
 - hosts: multi
   become: true
 
-  handlers:
-  - name: restart_apache
-    block:
-      - name: Restart apache on CentOS
-        shell: /usr/sbin/"{{ apache_service }}" -k restart
-        when: ansible_distribution == "CentOS"
+  vars:
+    apache_service_name: "{{ 'apache2' if ansible_facts['os_family'] == 'Debian' else 'httpd' }}"
+    apache_restart_handler: "{{ 'restart apache ubuntu' if ansible_facts['os_family'] == 'Debian' else 'restart apache centos' }}"
 
-      - name: Restart apache on Ubuntu
-        service:
-          name: "{{ apache_service }}"
-          state: restarted
-        when: ansible_distribution == "Ubuntu"
+  handlers:
+    - name: restart apache centos
+      shell: /usr/sbin/"{{ apache_service }}" -k restart
+      when: ansible_distribution == "CentOS"
+
+    - name: restart apache ubuntu
+      service:
+        name: "{{ apache_service }}"
+        state: restarted
+      when: ansible_distribution == "Ubuntu"
 
 
   pre_tasks:
@@ -47,7 +49,7 @@
       group: root
       owner: root
       mode: 0644
-    notify: restart_apache
+    notify: "{{ apache_restart_handler }}"
 
   - name: Ensure Apache is started now and at boot (CentOS)
     command: "{{ item }}"
@@ -56,7 +58,7 @@
     when: ansible_distribution == "CentOS"
 
   - name: Ensure Apache is started now and at boot (Ubuntu)
-    service:
+    ansible.builtin.service:
       name: "{{ apache_service }}"
       state: started
       enabled: yes
