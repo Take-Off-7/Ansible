@@ -1,0 +1,24 @@
+# playbook configuring apache on web servers of multiple distro
+---
+- hosts: multi
+  become: true
+
+  vars:
+    apache_service_name: "{{ 'apache2' if ansible_facts['os_family'] == 'Debian' else 'httpd' }}"
+    apache_restart_handler: "{{ 'restart apache ubuntu' if ansible_facts['os_family'] == 'Debian' else 'restart apache centos' }}"
+
+  handlers:
+    - import_tasks: handlers/apache.yml
+
+  pre_tasks:
+  - debug: msg=ansible_os_family
+  - name: Load variable files
+    include_vars: "{{ item }}"
+    with_first_found:
+      - "apache_{{ ansible_os_family }}.yml"
+      - "apache_default.yml"
+
+  tasks:
+  - import_tasks: tasks/apache.yml 
+
+- import_playbook: app.yml

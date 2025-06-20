@@ -1,0 +1,23 @@
+---
+- name: Install EPEL repo.
+  yum:
+    name: epel-release
+    state: present
+
+- name: Ensure firewalld is stopped (since this is a test server).
+  service:
+    name: firewalld
+    state: stopped
+  ignore_errors: yes
+
+- name: Install Node.js and npm.
+  yum:
+    name: npm
+    state: present
+    enablerepo: epel
+
+- name: Install Forever (to run our Node.js app).
+  npm:
+    name: forever
+    global: yes
+    state: present

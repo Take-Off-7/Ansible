@@ -1,0 +1,8 @@
+---
+- name: Install App
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Clone app into web root
+    - command: date

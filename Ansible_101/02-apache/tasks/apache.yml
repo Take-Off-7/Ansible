@@ -1,0 +1,36 @@
+- name: Add a line to a file
+  lineinfile:
+    dest: "{{ apache_config_dir }}"
+    regexp: '^ServerAdmin'
+    line: 'ServerAdmin root@root.com'
+
+- name: Ensure Apache is installed
+  package:
+    name: "{{ apache_package }}"
+    state: present
+  register: foo
+
+- debug: var=foo
+
+- name: Copy config file
+  copy:
+    src: "{{ src_file }}"
+    dest: "{{ apache_config_dir }}"
+    group: root
+    owner: root
+    mode: 0644
+  notify: "{{ apache_restart_handler }}"
+
+- name: Ensure Apache is started now and at boot (CentOS)
+  command: "{{ item }}"
+  with_items:
+    - "/usr/sbin/{{ apache_service }}"
+  when: ansible_distribution == "CentOS"
+
+- name: Ensure Apache is started now and at boot (Ubuntu)
+  ansible.builtin.service:
+    name: "{{ apache_service }}"
+    state: started
+    enabled: yes
+  ignore_errors: yes
+  when: ansible_distribution == "Ubuntu"

@@ -28,7 +28,7 @@
         state: restarted
         enabled: yes
 
-    - name: Show current tiem status
+    - name: Show current time status
       command: timedatectl status
       register: timedate_status
 

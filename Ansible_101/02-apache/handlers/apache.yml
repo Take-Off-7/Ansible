@@ -1,0 +1,8 @@
+---
+- name: restart apache centos
+  shell: /usr/sbin/"{{ apache_service }}" -k restart
+
+- name: restart apache ubuntu
+  service:
+    name: "{{ apache_service }}"
+    state: restarted
