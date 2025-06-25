@@ -5,4 +5,5 @@
 
   tasks:
     - name: Clone app into web root
-    - command: date
+      ansible.builtin.command: date
+      changed_when: false
