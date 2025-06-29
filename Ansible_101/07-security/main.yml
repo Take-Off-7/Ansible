@@ -1,0 +1,103 @@
+---
+- hosts: all
+  become: true
+
+  handlers:
+    - name: restart ssh
+      service:
+        name: sshd
+        state: restarted
+      ignore_errors: yes
+
+  tasks:
+    - name: Ensure required SELinux Python packages are installed
+      dnf:
+        name:
+          - python3-libselinux
+          - policycoreutils-python-utils
+        state: present
+      when: ansible_distribution == "CentOS" and ansible_distribution_major_version | int == 9
+
+    - name: Tell SELinux about SSH's new port.
+      seport:
+        ports: 22
+        proto: tcp
+        setype: ssh_port_t
+        state: present
+      when: ansible_selinux.status == "enabled"
+
+    - name: Make sure SSH is more secure.
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+        validate: 'sshd -T -f %s'
+      with_items:
+        - regexp: "^PasswordAuthentication"
+          line: "PasswordAuthentication no"
+        - regexp: "^PermitRootLogin"
+          line: "PermitRootLogin yes"
+        - regexp: "^Port"
+          line: "Port 22"
+      notify: restart ssh
+
+    - name: Add user johndoe
+      user:
+        name: johndoe
+
+    - name: Add sudo group rights for deployment user.
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: "^johndoe"
+        line: 'johndoe ALL=(ALL) NOPASSWD: ALL'
+        state: present
+        validate: 'visudo -cf %s'
+
+    - name: Remove unused packages.
+      package:
+        name:
+          - httpd
+          - nano
+        state: present
+
+    - name: Edit file permissions.
+      file:
+        path: /etc/ssh/sshd_config
+        mode: 0600
+
+    - name: Set up autoupdates.
+      yum:
+        name: dnf-automatic
+        state: present
+
+    - name: Ensure auto updates are running
+      service:
+        name: dnf-automatic-install.timer
+        state: started
+        enabled: yes
+      ignore_errors: yes
+
+    - name: Install firewalld
+      package:
+        name: firewalld
+        state: present
+
+    - name: Configure ports in firewall.
+      firewalld:
+        state: "{{ item.state }}"
+        port: "{{ item.port }}"
+        zone: external
+        immediate: yes
+        permanent: yes
+      with_items:
+        - { state: 'enabled', port: 22/tcp }
+        - { state: 'enabled', port: 123/udp }
+      ignore_errors: yes
+
+    - name: Ensure firewalld is running
+      service:
+        name: firewalld
+        state: started
+        enabled: yes
+      ignore_errors: yes
