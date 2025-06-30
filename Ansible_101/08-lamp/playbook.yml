@@ -1,0 +1,46 @@
+---
+- hosts: mm
+  become: true
+  gather_facts: false
+
+  vars_files:
+    - vars/mysql.yml
+    - vars/main.yml
+    - vars/vhosts.yml
+
+  pre_tasks:
+    - name: Install Python if not already present
+      raw: test -e /usr/bin/python3 || (apt -y update && apt install -y python3)
+      changed_when: False
+      tags: ['always']
+
+    - name: Gather facts after Python is definitely present.
+      setup:
+      tags: ['always']
+
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid=3600
+
+    - name: Ensure required dependencies is installed.
+      apt:
+        name:
+          - curl
+          - unzip
+        state: present
+
+    - name: Include local vhosts file when deploying locally.
+      include_vars: vars/vhosts-local.yml
+      when: deploy_codebase != true
+
+  roles:
+    - geerlingguy.firewall
+    - geerlingguy.ntp
+    - geerlingguy.git
+
+  tasks:
+    - include: tasks/nginx.yml
+      tags: ['vhosts']
+
+    - include: tasks/deploy.yml
+      when: deploy_codebase
+      tags: ['deploy']
